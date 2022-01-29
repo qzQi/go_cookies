@@ -52,6 +52,7 @@ func getAlumByID(c *gin.Context) {
 
 func main() {
 	router := gin.Default()
+	// 这样的路由才可以接受query string吧，/albums?id=2&name=qzy
 	router.GET("/albums", getAlbums)
 	// 貌似是不管这里是什么都把消息给了这个动态路由
 	router.GET("/albums/:id", getAlumByID)

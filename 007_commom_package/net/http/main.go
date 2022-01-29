@@ -9,11 +9,13 @@ https://go.dev/doc/articles/wiki/
 package main
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 )
 
 type Page struct {
@@ -32,7 +34,19 @@ func loadPage(title string) (*Page, error) {
 	if err != nil {
 		return nil, err
 	}
+	fileName = fileName[:len(fileName)-4]
 	return &Page{fileName, body}, nil
+}
+
+var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
+
+func getTitle(w http.ResponseWriter, r *http.Request) (string, error) {
+	m := validPath.FindStringSubmatch(r.URL.Path)
+	if m == nil {
+		http.NotFound(w, r)
+		return "", errors.New("invalid path")
+	}
+	return m[2], nil
 }
 
 // http的querystring，以前不知道
@@ -49,7 +63,10 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	// p, _ := loadPage(title)
 	// fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", p.Title, p.Body)
 	// fmt.Fprintln(w, "in /view/ router")
-	title := r.URL.Path[len("/view/"):]
+	title, err := getTitle(w, r)
+	if err != nil {
+		return
+	}
 	p, err := loadPage(title)
 	if err != nil {
 		// 原文件不存在的话，就转向edit创建
@@ -76,7 +93,10 @@ func editHandler(w http.ResponseWriter, r *http.Request) {
 	// // This function will work fine,
 	// // but all that hard-coded HTML is ugly.
 	// // Of course, there is a better way.
-	title := r.URL.Path[len("/edit/"):]
+	title, err := getTitle(w, r)
+	if err != nil {
+		return
+	}
 	p, err := loadPage(title)
 	if err != nil {
 		p = &Page{Title: title}
@@ -87,10 +107,16 @@ func editHandler(w http.ResponseWriter, r *http.Request) {
 
 // after edit we need save the file
 func saveHandler(w http.ResponseWriter, r *http.Request) {
-	title := r.URL.Path[len("/save/"):]
+	title, err := getTitle(w, r)
+	if err != nil {
+		return
+	}
 	body := r.FormValue("body")
 	p := &Page{Title: title, Body: []byte(body)}
-	p.save()
+	err = p.save()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 	http.Redirect(w, r, "/view/"+title, http.StatusFound)
 }
 
@@ -101,10 +127,18 @@ func queryStr(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// http.HandleFunc("/", handler)
+	// 下面这一块就是消息的router设计了
+	http.HandleFunc("/", handler)
 	http.HandleFunc("/view/", viewHandler)
 	http.HandleFunc("/edit/", editHandler)
 	http.HandleFunc("/save/", saveHandler)
 	http.HandleFunc("/query", queryStr)
+	// log.Fatal(http.ListenAndServe(":8080",nil))
 	log.Fatal(http.ListenAndServe("localhost:8080", nil))
 }
+
+/*
+这一块还是由很多的东西需要学习，比如http的状态码。
+get/post 对应的不同status code
+还有就是语言层面的熟练
+*/
