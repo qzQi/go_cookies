@@ -19,8 +19,25 @@ type Contex struct {
 	StatusCod      int
 }
 
+func NewContex(w http.ResponseWriter, r *http.Request) *Contex {
+	context := Contex{ResponseWriter: w, Request: *r}
+	context.Path = r.URL.Path
+	context.Method = r.Method
+	// context.
+	return &context
+}
+
+// PostForm ：只适用于表单数据 k，y。但是post请求可以有消息体啊
+// 这个目前没有实现? 看go标准库如何实现的!!!
 func (c *Contex) PostForm(key string) string {
-	return c.Request.FormValue(key)
+
+	// 就是这里出现了问题，没有解析form
+	value := c.Request.FormValue(key)
+	if value == "" {
+		value = "error in PostForm"
+	}
+	// fmt.Fprintln(LogFile, "in ", c.Path, "value:", value)
+	return value
 }
 
 func (c *Contex) Query(key string) string {
@@ -54,6 +71,7 @@ func (c *Contex) JSON(code int, obj interface{}) {
 	if err != nil {
 		http.Error(c.ResponseWriter, err.Error(), 500)
 	}
+	// json file本身也是字符串
 	c.ResponseWriter.Write([]byte(fmt.Sprintf("%s", b)))
 }
 
