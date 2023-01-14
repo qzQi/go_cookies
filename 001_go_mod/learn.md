@@ -13,8 +13,11 @@ import (
     // package所在的位置，然后下载下来
     // 再加一句吧，import导入的package的路径
 
-    "github.com/qzQi/go_cookies/001_go_mod/package_path"
+    // "github.com/qzQi/go_cookies/001_go_mod/package_path"
+    lib001 "github.com/qzQi/go_cookies/001_go_mod"
     // 使用这个module里面自己的package的导入方法
+    // 一个dictionary一个package，一般dirName与packageName相同
+    // 不同的话前面加一个别名
 )
 ```
 

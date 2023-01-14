@@ -32,6 +32,7 @@ func NewContex(w http.ResponseWriter, r *http.Request) *Contex {
 func (c *Contex) PostForm(key string) string {
 
 	// 就是这里出现了问题，没有解析form
+	// form就是表单数据，不是json，body是json的话还需要自己解析
 	value := c.Request.FormValue(key)
 	if value == "" {
 		value = "error in PostForm"
